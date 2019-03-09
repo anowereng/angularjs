@@ -1,0 +1,126 @@
+
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <style type="text/css">
+        body {
+            font-family: Arial;
+            font-size: 10pt;
+        }
+
+        .thumb {
+            width: 24px;
+            height: 24px;
+            float: none;
+            position: relative;
+            top: 7px;
+        }
+
+        form .progress {
+            line-height: 15px;
+        }
+
+        .progress {
+            display: inline-block;
+            width: 100px;
+            border: 3px groove #ccc;
+        }
+
+            .progress > div {
+                font-size: smaller;
+                background-color: red;
+                width: 0%;
+            }
+    </style>
+</head>
+<body>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.9/angular.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/danialfarid-angular-file-upload/12.2.13/ng-file-upload.min.js"></script>
+    <script type="text/javascript">
+        var app = angular.module('MyApp', ['ngFileUpload'])
+        app.controller('MyController', function ($scope, Upload, $timeout, $http) {
+
+            $scope.model = { files: [] }
+            $scope.UploadFiles = function (files) {
+                $scope.model.files = files;
+                console.log($scope.model.files);
+                if ($scope.model.files && $scope.model.files.length) {
+                    Upload.upload({
+
+                        //url: '/Company/Upload/',
+                        //data: {
+                        //    files: $scope.SelectedFiles
+                        //}
+                        //$scope.model.files= $scope.SelectedFiles;
+                    }).then(function (response) {
+                        $timeout(function () {
+                            $scope.model.files = files;
+                        });
+                    }, function (response) {
+                        if (response.status > 0) {
+                            var errorMsg = response.status + ': ' + response.data;
+                            alert(errorMsg);
+                        }
+                    }, function (evt) {
+                        var element = angular.element(document.querySelector('#dvProgress'));
+                        $scope.Progress = Math.min(100, parseInt(100.0 * evt.loaded / evt.total));
+                        element.html('<div style="width: ' + $scope.Progress + '%">' + $scope.Progress + '%</div>');
+                    });
+                }
+            };
+
+            $scope.filedata = [];
+            $scope.InsertItem = function (flag, files) {
+                if (flag == 0) {
+                    $scope.filedata = files
+                }
+                if ($scope.filedata && $scope.filedata.length && files == 1) {
+                    $scope.model.files = $scope.filedata
+                    Upload.upload({
+                        url: '/Company/Upload/',
+                        data: {
+                            data: $scope.model
+                        }
+                    }).then(function (response) {
+                        $timeout(function () {
+                            $scope.model.files = files;
+                        });
+                    }
+                    )
+                };
+            }
+
+        });
+    </script>
+    <div ng-app="MyApp" ng-controller="MyController">
+        <input type="file" multiple="multiple" ngf-select="InsertItem(0,$files)" />
+        <input type="text" ng-model="model.comName" />
+        <input type="button" value="Submit" ng-click="InsertItem(1,1)" />
+        <hr />
+        Files:
+        <ul><li ng-repeat="file in SelectedFiles">{{file.name}}</li></ul>
+        <div id="dvProgress" class="progress" ng-show="Progress >= 0">
+        </div>
+    </div>
+</body>
+======================================================
+
+     public ContentResult Upload(Company data)
+        {
+            string path = Server.MapPath("~/Uploads/");
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            if (Request.Files.Count > 0)
+            {
+                foreach (string key in Request.Files)
+                {
+                    HttpPostedFileBase postedFile = Request.Files[key];
+                    postedFile.SaveAs(path + postedFile.FileName);
+                }
+            }
+          
+
+            return Content("Success");
+        }
